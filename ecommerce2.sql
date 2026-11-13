@@ -1,6 +1,7 @@
 -- =====================================================
 -- PROJECT: ONLINE SHOPPING AND E-COMMERCE MANAGEMENT
 -- DBMS: MYSQL 8.0+
+-- (Reviews table removed)
 -- =====================================================
 
 -- 1. DATABASE CREATION
@@ -148,21 +149,7 @@ CREATE TABLE Shipments (
     CHECK (ShipmentStatus IN ('Processing','Dispatched','In Transit','Delivered','Returned'))
 );
 
--- TABLE 12: REVIEWS
-CREATE TABLE Reviews (
-    ReviewID INT PRIMARY KEY AUTO_INCREMENT,
-    CustomerID INT NOT NULL,
-    ProductID INT NOT NULL,
-    Rating INT NOT NULL,
-    Comment VARCHAR(250),
-    ReviewDate DATE,
-    FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID),
-    FOREIGN KEY (ProductID) REFERENCES Products(ProductID),
-    CHECK (Rating BETWEEN 1 AND 5),
-    UNIQUE (CustomerID, ProductID)
-);
-
--- TABLE 13: RETURNS
+-- TABLE 12: RETURNS
 CREATE TABLE Returns (
     ReturnID INT PRIMARY KEY AUTO_INCREMENT,
     OrderItemID INT NOT NULL,
@@ -309,17 +296,6 @@ INSERT INTO Shipments VALUES
 (5,207,'TRK1007','Delhivery','2026-10-08','2026-10-10','Delivered'),
 (6,208,'TRK1008','DTDC','2026-10-09',NULL,'In Transit');
 
--- REVIEWS
-INSERT INTO Reviews VALUES
-(1,1,101,5,'Excellent laptop','2026-10-06'),
-(2,2,102,4,'Good smartphone','2026-10-07'),
-(3,3,103,5,'Amazing sound quality','2026-10-08'),
-(4,4,104,3,'Average quality','2026-10-09'),
-(5,5,106,4,'Useful book','2026-10-10'),
-(6,6,110,5,'Great watch','2026-10-11'),
-(7,7,108,4,'Works properly','2026-10-12'),
-(8,8,109,5,'Excellent product','2026-10-13');
-
 -- RETURNS
 INSERT INTO Returns VALUES
 (1,11,'2026-10-12','Product not working','Approved',1800),
@@ -377,7 +353,7 @@ UPDATE Products SET Price = 26000 WHERE ProductID = 102;
 
 -- Q14 Demonstrate DELETE safely using a transaction
 START TRANSACTION;
-DELETE FROM Reviews WHERE ReviewID = 8;
+DELETE FROM Returns WHERE ReturnID = 2;
 ROLLBACK;
 
 -- =====================================================
@@ -584,14 +560,6 @@ SELECT * FROM SuccessfulPaymentView;
 -- 13. ADVANCED QUERIES
 -- =====================================================
 
--- Q46 Best-rated products
-SELECT P.ProductName, AVG(R.Rating) AS AverageRating, COUNT(R.ReviewID) AS TotalReviews
-FROM Products P
-JOIN Reviews R ON P.ProductID = R.ProductID
-GROUP BY P.ProductID, P.ProductName
-HAVING AVG(R.Rating) >= 4
-ORDER BY AverageRating DESC;
-
 -- Find the customer who placed the maximum orders
 SELECT C.CustomerName, COUNT(O.OrderID) AS TotalOrders
 FROM Customers C
@@ -611,11 +579,6 @@ SELECT O.OrderID, O.OrderStatus
 FROM Orders O
 LEFT JOIN Shipments S ON O.OrderID = S.OrderID
 WHERE S.ShipmentID IS NULL;
-
--- Find products that have never been reviewed
-SELECT P.ProductName
-FROM Products P
-WHERE NOT EXISTS (SELECT 1 FROM Reviews R WHERE R.ProductID = P.ProductID);
 
 -- Find total quantity sold for each product
 SELECT P.ProductName, SUM(OI.Quantity) AS TotalSold
@@ -638,6 +601,11 @@ LEFT JOIN Shipments S ON O.OrderID = S.OrderID;
 SELECT SUM(RefundAmount) AS TotalRefund
 FROM Returns
 WHERE ReturnStatus = 'Refunded';
+
+-- Find products that have never been ordered
+SELECT P.ProductName
+FROM Products P
+WHERE NOT EXISTS (SELECT 1 FROM OrderItems OI WHERE OI.ProductID = P.ProductID);
 
 -- =====================================================
 -- 14. INDEXES
@@ -673,7 +641,6 @@ SELECT COUNT(*) AS TotalOrders FROM Orders;
 SELECT COUNT(*) AS TotalOrderItems FROM OrderItems;
 SELECT COUNT(*) AS TotalPayments FROM Payments;
 SELECT COUNT(*) AS TotalShipments FROM Shipments;
-SELECT COUNT(*) AS TotalReviews FROM Reviews;
 SELECT COUNT(*) AS TotalReturns FROM Returns;
 
 -- END OF PROJECT
